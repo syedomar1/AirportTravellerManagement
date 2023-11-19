@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airport Management System Simulation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Airport Management System Simulation</h1>
+    <div class=" bg">
+        <form id="simulationForm">
+            <label for="numPassengers">Number of Passengers:</label>
+            <input type="number" id="numPassengers" name="numPassengers" required>
+
+            <label for="numTerminals">Number of Terminals:</label>
+            <input type="number" id="numTerminals" name="numTerminals" required>
+
+            <label for="submit">Start Simulation:</label>
+            <button type="button" id="submit" onclick="startSimulation()">Submit</button>
+        </form>
+
+        <div id="output">
+            <!-- Output will be displayed here -->
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+<div class="bottom-link";">
+    <a href="">Click Here to go Back to Planning</a>
+
+</div>
+</html>
