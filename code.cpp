@@ -1,127 +1,170 @@
 #include <iostream>
 #include <vector>
-#include <tuple>
+#include <algorithm>
 #include <random>
-#include <string>
-#include <thread>
-#include <chrono>
-#include <limits.h>
-#include <queue>
-#include <mutex>
 
 using namespace std;
 
-struct Passenger {
-    string name;
-    int arrivalTime; // Departure time of the flight
-    int burstTime;   // Maximum wait time in the airport
-    int priority;    // Priority based on the earliest flight departure time
+struct Flight {
+    string flightNumber;
+    int arrivalTime;
+    int burstTime;
+    int waitingTime;
+    int completionTime;
+    vector<string> boardedPassengers;
 };
 
-void delay() {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+struct Passenger {
+    string flightNumber;
+    string passengerName;
+    int arrivalTime;
+    int burstTime;
+};
+
+void fcfs(vector<Flight>& flights) {
+    int currentTime = 0;
+
+    sort(flights.begin(), flights.end(), [currentTime](const Flight& a, const Flight& b) {
+        if (a.arrivalTime <= currentTime && b.arrivalTime <= currentTime) {
+            return a.arrivalTime < b.arrivalTime;
+        } else if (a.completionTime > currentTime && b.completionTime > currentTime) {
+            return a.waitingTime > b.waitingTime;
+        } else {
+            return a.completionTime < b.completionTime;
+        }
+    });
+
+    for (Flight& flight : flights) {
+        while (currentTime < flight.arrivalTime) {
+            currentTime++;
+        }
+
+        for (Flight& otherFlight : flights) {
+            if (otherFlight.completionTime == currentTime && otherFlight.arrivalTime < currentTime) {
+                otherFlight.completionTime += 2;
+            }
+        }
+
+        flight.completionTime = currentTime + flight.burstTime;
+
+        cout << "Flight " << flight.flightNumber << " has arrived at time " << currentTime
+             << ". Will depart at time " << flight.completionTime << ".\n";
+
+        for (Flight& otherFlight : flights) {
+            if (otherFlight.arrivalTime < currentTime && otherFlight.completionTime > currentTime) {
+                otherFlight.waitingTime++;
+            }
+        }
+
+        currentTime = flight.completionTime;
+
+        cout << "Flight " << flight.flightNumber << " has departed at time " << currentTime << ".\n";
+    }
 }
 
-void fcfs(vector<Passenger>& passengers, int start, int end) {
-    // FCFS implementation
-    // ...
+void sjf(vector<Passenger>& passengers, vector<Flight>& flights) {
+    int currentTime = 0;
+
+    sort(passengers.begin(), passengers.end(), [](const Passenger& a, const Passenger& b) {
+        return make_tuple(a.arrivalTime, a.burstTime) < make_tuple(b.arrivalTime, b.burstTime);
+    });
+
+    for (const Passenger& passenger : passengers) {
+        currentTime = 0;
+
+        while (currentTime < passenger.arrivalTime) {
+            currentTime++;
+        }
+
+        cout << "Passenger " << passenger.passengerName << " for Flight " << passenger.flightNumber
+             << " has arrived at time " << currentTime << ".\n";
+
+        for (Flight& flight : flights) {
+            if (flight.flightNumber == passenger.flightNumber) {
+                flight.boardedPassengers.push_back(passenger.passengerName);
+            }
+        }
+
+        currentTime += 1;
+
+        cout << "Passenger " << passenger.passengerName << " for Flight " << passenger.flightNumber
+             << " has left at time " << currentTime << ".\n";
+    }
 }
 
-void sjf(vector<Passenger>& passengers, int start, int end) {
-    // SJF implementation
-    // ...
+void printBoardedPassengers(const vector<Flight>& flights) {
+    cout << "Final List of Boarded Passengers:\n";
+    for (const Flight& flight : flights) {
+        cout << "Flight " << flight.flightNumber << " - ";
+        if (flight.boardedPassengers.empty()) {
+            cout << "No passengers boarded.\n";
+        } else {
+            cout << "Passengers: ";
+            for (const string& passenger : flight.boardedPassengers) {
+                cout << passenger << " ";
+            }
+            cout << "\n";
+        }
+    }
 }
 
-void rr(vector<Passenger>& passengers, int start, int end, int quantum) {
-    // RR implementation
-    // ...
-}
+tuple<vector<Flight>, vector<Passenger>> generateRandomDataset(int numFlights, int numPassengersPerFlight) {
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<> arrivalTimeDist(0, 100);
+    uniform_int_distribution<> burstTimeDist(1, 200);
 
-void priority(vector<Passenger>& passengers, int start, int end) {
-    // Priority scheduling implementation
-    // ...
-}
+    vector<Flight> flights;
+    vector<Passenger> passengers;
 
-tuple<vector<Passenger>> generateRandomPassengerData(int numPassengers, int maxWaitTime = 10) {
-    // Function to generate random passenger data
-    // ...
-}
+    for (int i = 0; i < numFlights; ++i) {
+        Flight flight;
+        flight.flightNumber = "F" + to_string(i + 1);
+        flight.arrivalTime = arrivalTimeDist(gen);
+        flight.burstTime = burstTimeDist(gen);
+        flight.waitingTime = 0;
+        flight.completionTime = 0;
+        flights.push_back(flight);
 
-void securityCheck(const Passenger& passenger) {
-    // Simulate security check operations
-    cout << "Security check for passenger: " << passenger.name << endl;
-    delay();
-    cout << "Security check completed for passenger: " << passenger.name << endl;
-}
+        for (int j = 0; j < numPassengersPerFlight; ++j) {
+            Passenger passenger;
+            passenger.flightNumber = flight.flightNumber;
+            passenger.passengerName = "P" + to_string(j + 1);
+            passenger.arrivalTime = arrivalTimeDist(gen);
+            passenger.burstTime = 0;
+            passengers.push_back(passenger);
+        }
+    }
 
-void baggageHandling(const Passenger& passenger) {
-    // Simulate baggage handling operations
-    cout << "Baggage handling for passenger: " << passenger.name << endl;
-    delay();
-    cout << "Baggage handling completed for passenger: " << passenger.name << endl;
-}
-
-void identityVerification(const Passenger& passenger) {
-    // Simulate identity verification operations
-    cout << "Identity verification for passenger: " << passenger.name << endl;
-    delay();
-    cout << "Identity verification completed for passenger: " << passenger.name << endl;
-}
-
-void documentCheck(const Passenger& passenger) {
-    // Simulate document check operations
-    cout << "Document check for passenger: " << passenger.name << endl;
-    delay();
-    cout << "Document check completed for passenger: " << passenger.name << endl;
-}
-
-void boarding(const Passenger& passenger) {
-    // Simulate boarding operations
-    cout << "Boarding for passenger: " << passenger.name << endl;
-    delay();
-    cout << "Boarding completed for passenger: " << passenger.name << endl;
+    return make_tuple(flights, passengers);
 }
 
 int main() {
-    int numPassengers = 100;
-    tuple<vector<Passenger>> passengerTuple = generateRandomPassengerData(numPassengers);
-    vector<Passenger> passengers = get<0>(passengerTuple);
+    int numFlights = 50;
+    int numPassengersPerFlight = 100;
+    auto dataset = generateRandomDataset(numFlights, numPassengersPerFlight);
 
-    int no_terminals;
-    cout << "Enter Number of Terminals:";
-    cin >> no_terminals;
+    vector<Flight> flights = get<0>(dataset);
+    vector<Passenger> passengers = get<1>(dataset);
 
-    vector<queue<Passenger>> terminalQueues(no_terminals);
+    fcfs(flights);
 
-    int passengers_per_terminal = numPassengers / no_terminals;
+    cout << "\nFlight Arrival and Departure Times:\n";
+    for (const Flight& flight : flights) {
+        cout << "Flight " << flight.flightNumber << " - Arrival: " << flight.arrivalTime
+             << ", Departure: " << flight.completionTime << "\n";
+    }
 
-    auto starting = chrono::high_resolution_clock::now();
-    vector<thread> checkInThreads;
-    for (int i = 0; i < no_terminals; i++) {
-        checkInThreads.emplace_back([&, i] {
-            sjf(passengers, i * passengers_per_terminal, (i + 1) * passengers_per_terminal);
-            for (int j = i * passengers_per_terminal; j < (i + 1) * passengers_per_terminal; j++) {
-                securityCheck(passengers[j]);
-                identityVerification(passengers[j]);
-                documentCheck(passengers[j]);
-
-                // Lock the terminal queue for safe operations
-                std::lock_guard<std::mutex> lock(terminalMutex);
-                terminalQueues[i].push(passengers[j]);
-
-                baggageHandling(passengers[j]);
-                boarding(passengers[j]);
+    for (Passenger& passenger : passengers) {
+        for (const Flight& flight : flights) {
+            if (passenger.flightNumber == flight.flightNumber) {
+                passenger.burstTime = flight.completionTime - passenger.arrivalTime;
             }
-        });
+        }
     }
-    for (auto& thread : checkInThreads) {
-        thread.join();
-    }
-    auto ending = chrono::high_resolution_clock::now();
-    auto durationer = chrono::duration_cast<chrono::milliseconds>(ending - starting).count();
-    cout << "Execution time: Check-In " << durationer << " milliseconds" << endl;
 
-    // Additional operations for other aspects of the airport (security, baggage claim, etc.) can be added similarly.
+    sjf(passengers, flights);
 
+    printBoardedPassengers(flights);
     return 0;
 }
